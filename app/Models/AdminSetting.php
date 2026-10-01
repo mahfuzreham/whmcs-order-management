@@ -11,6 +11,7 @@ class AdminSetting extends Model
 
     protected static array $secretKeys = [
         'whmcs_secret',
+        'whm_api_token',
         'bkash_app_secret',
         'bkash_username',
         'bkash_password',
