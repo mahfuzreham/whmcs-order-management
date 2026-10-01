@@ -63,7 +63,10 @@ Route::middleware('portal.auth')->group(function () {
         Route::post('/accounts/{user}/suspend', [ResellerController::class, 'suspend'])->name('reseller.accounts.suspend');
         Route::post('/accounts/{user}/unsuspend', [ResellerController::class, 'unsuspend'])->name('reseller.accounts.unsuspend');
         Route::post('/accounts/{user}/terminate', [ResellerController::class, 'terminate'])->name('reseller.accounts.terminate');
+        Route::post('/accounts/{user}/package', [ResellerController::class, 'changePackage'])->name('reseller.accounts.package');
         Route::get('/packages', [ResellerController::class, 'packages'])->name('reseller.packages');
+        Route::post('/packages', [ResellerController::class, 'createPackage'])->name('reseller.packages.create');
+        Route::post('/packages/{pkg}/delete', [ResellerController::class, 'deletePackage'])->name('reseller.packages.delete');
     });
 
     Route::get('/cart/checkout', [CartController::class, 'checkout'])->name('cart.checkout');
