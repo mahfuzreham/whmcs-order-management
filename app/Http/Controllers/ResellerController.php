@@ -37,7 +37,7 @@ class ResellerController extends Controller
         return view('reseller.index',compact('accounts','packages'));
     }
 
-    public function accounts(): View { $this->guard(); return view('reseller.accounts',['accounts'=>$this->whm->configured()?$this->whm->listAccounts():[]]); }
+    public function accounts(): View { $this->guard(); return view('reseller.accounts',['accounts'=>$this->whm->configured()?$this->whm->listAccounts():[],'packages'=>$this->whm->configured()?$this->whm->listPackages():[]]); }
     public function packages(): View { $this->guard(); return view('reseller.packages',['packages'=>$this->whm->configured()?$this->whm->listPackages():[]]); }
 
     public function createPackage(Request $request){
