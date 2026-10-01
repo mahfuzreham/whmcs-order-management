@@ -42,7 +42,7 @@
 <input class="input" type="password" name="whm_api_token" placeholder="{{ $settings['whm_api_token_configured'] ? 'Configured — leave blank to keep current token' : 'Enter WHM API token' }}">
 <label><input type="checkbox" name="whm_verify_ssl" value="1" @checked($settings['whm_verify_ssl'])> Verify WHM SSL certificate</label>
 <label>WHM API Timeout</label>
-<input class="input" type="number" min="5" max="120" name="whm_timeout" value="{{ $settings['whm_timeout'] }}">
+<input class="input" type="number" min="5" max="120" name="whm_api_timeout" value="{{ $settings['whm_api_timeout'] }}">
 <p class="muted">Use a restricted WHM API token where your server/provider supports it. Never expose this token to customers or resellers.</p>
 
 <hr style="border:0;border-top:1px solid #eee;margin:24px 0">
