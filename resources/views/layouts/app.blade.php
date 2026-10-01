@@ -10,14 +10,14 @@
         .wrap{max-width:1100px;margin:35px auto;padding:0 20px}
         .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
         .card{background:#fff;border:1px solid #e5e7eb;border-radius:14px;padding:22px;box-shadow:0 4px 20px #00000008}
-        .muted{color:#6b7280}.value{font-size:30px;font-weight:700;margin-top:8px}
+        .muted{color:#6b7280}.links{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 25px}.links a{background:#fff;border:1px solid #e5e7eb;padding:9px 13px;border-radius:9px;color:#172033;text-decoration:none}.row-card{display:flex;justify-content:space-between;align-items:center;gap:16px}.badge{display:inline-block;background:#eef2ff;padding:5px 9px;border-radius:999px;font-size:12px}.list{display:grid;gap:12px}.page-head{margin-bottom:20px}.muted{font-size:30px;font-weight:700;margin-top:8px}
         button{border:0;background:#fff;color:#111827;cursor:pointer}
         @media(max-width:700px){.grid{grid-template-columns:1fr}}
     </style>
 </head>
 <body>
 <nav class="nav">
-    <strong>Billing Portal</strong>
+    <a href="{{ route('dashboard') }}" style="color:#fff;text-decoration:none"><strong>Billing Portal</strong></a>
     @if(session()->has('whmcs_client'))
         <form method="POST" action="{{ route('logout') }}">@csrf<button>Logout</button></form>
     @endif
