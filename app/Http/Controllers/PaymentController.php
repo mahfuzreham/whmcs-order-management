@@ -29,6 +29,8 @@ class PaymentController extends Controller
         $invoice=$this->whmcs->invoice($clientId,$id);
         abort_unless($invoice,404);
 
+        if (!AdminSetting::bool('bkash_enabled', false)) return back()->withErrors(['payment'=>'bKash payments are currently disabled.']);
+
         $amount=(float)($invoice['balance'] ?? $invoice['total'] ?? 0);
         if(strtolower($invoice['status'] ?? '')==='paid' || $amount<=0){
             return redirect()->route('invoice',$id)->withErrors(['payment'=>'Invoice is already paid.']);
@@ -112,8 +114,9 @@ class PaymentController extends Controller
         $client=session('whmcs_client',[]);
         $payment=PortalPayment::where('id',$id)->where('client_id',(int)($client['id'] ?? 0))->firstOrFail();
 
+        if(!AdminSetting::bool('refund_enabled', true)) return back()->withErrors(['refund'=>'Instant refund is currently disabled.']);
         if($payment->status!=='paid' || !$payment->completed_at) return back()->withErrors(['refund'=>'This payment is not refundable.']);
-        if($payment->completed_at->lt(now()->subMinutes((int)\App\Models\AdminSetting::get('refund_window_minutes',config('services.refund.window_minutes',5))))) return back()->withErrors(['refund'=>'The instant refund window has expired.']);
+        if($payment->completed_at->lt(now()->subMinutes((int)\App\Models\AdminSetting::get('refund_window_minutes',5)))) return back()->withErrors(['refund'=>'The instant refund window has expired.']);
         if($payment->refund_status==='completed') return back()->withErrors(['refund'=>'This payment has already been refunded.']);
 
         $invoice=$this->whmcs->invoice($payment->client_id,$payment->invoice_id);
