@@ -27,6 +27,12 @@
 
 <hr style="border:0;border-top:1px solid #eee;margin:24px 0">
 
+<hr style="border:0;border-top:1px solid #eee;margin:24px 0">
+
+<h2>Web Hosting Control Panel</h2>
+<label><input type="checkbox" name="hosting_panel_enabled" value="1" @checked($settings['hosting_panel_enabled'])> Enable custom Hosting Panel</label>
+<p class="muted">Disabled by default. When disabled, customers still get the cPanel fallback from their WHMCS hosting service. Enable this when the custom WHM/cPanel API panel is ready.</p>
+
 <h2>bKash Tokenized Checkout</h2>
 <label><input type="checkbox" name="bkash_enabled" value="1" @checked($settings['bkash_enabled'])> Enable bKash</label>
 <label>Base URL</label>
