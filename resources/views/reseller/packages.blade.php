@@ -1,0 +1,6 @@
+@extends('layouts.app')
+@section('content')
+<div class="page-head"><div><h1>Hosting Packages</h1><div class="muted">Your reseller plans and resource limits.</div></div><a class="btn" href="{{ route('reseller') }}">Overview</a></div>
+<div class="card" style="overflow:auto"><table style="width:100%;border-collapse:collapse"><tr><th style="text-align:left;padding:10px">Package</th><th style="padding:10px">Disk</th><th style="padding:10px">Bandwidth</th><th style="padding:10px">Email</th><th style="padding:10px">Databases</th></tr>
+@forelse($packages as $p)<tr style="border-top:1px solid #eee"><td style="padding:10px">{{ $p['name']??$p['pkg']??'—' }}</td><td style="text-align:center">{{ $p['quota']??'—' }}</td><td style="text-align:center">{{ $p['bwlimit']??'—' }}</td><td style="text-align:center">{{ $p['maxpop']??'—' }}</td><td style="text-align:center">{{ $p['maxsql']??'—' }}</td></tr>@empty<tr><td colspan="5" class="empty">No packages found.</td></tr>@endforelse</table></div>
+@endsection
