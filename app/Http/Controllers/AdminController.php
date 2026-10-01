@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Hash;
 
 class AdminController extends Controller
 {
-    public const PERMISSIONS=['dashboard.view','payments.view','payments.refund','staff.view','staff.manage','settings.manage'];
+    public const PERMISSIONS=['dashboard.view','payments.view','payments.refund','staff.view','staff.manage','settings.manage','hosting.manage'];
 
     public function dashboard(){ return view('admin.dashboard',['payments'=>PortalPayment::latest()->limit(10)->get(),'staffCount'=>Staff::count()]); }
 
@@ -34,15 +34,13 @@ class AdminController extends Controller
 
     public function settings()
     {
-        $secretKeys=['whmcs_secret','bkash_app_secret','bkash_username','bkash_password','admin_master_password'];
-
         return view('admin.settings',['settings'=>[
             'whmcs_url'=>AdminSetting::get('whmcs_url',''),
             'whmcs_identifier'=>AdminSetting::get('whmcs_identifier',''),
             'whmcs_secret_configured'=>AdminSetting::configured('whmcs_secret'),
             'whmcs_timeout'=>AdminSetting::get('whmcs_timeout',15),
             'whmcs_support_dept_id'=>AdminSetting::get('whmcs_support_dept_id',1),
-
+            'hosting_panel_enabled'=>AdminSetting::bool('hosting_panel_enabled',false),
             'bkash_enabled'=>AdminSetting::bool('bkash_enabled',false),
             'bkash_base_url'=>AdminSetting::get('bkash_base_url','https://tokenized.pay.bka.sh/v1.2.0-beta'),
             'bkash_app_key'=>AdminSetting::get('bkash_app_key',''),
@@ -51,7 +49,6 @@ class AdminController extends Controller
             'bkash_password_configured'=>AdminSetting::configured('bkash_password'),
             'bkash_callback_url'=>AdminSetting::get('bkash_callback_url',url('/payment/callback/bkash')),
             'bkash_timeout'=>AdminSetting::get('bkash_timeout',20),
-
             'checkout_payment_method'=>AdminSetting::get('checkout_payment_method','bkash'),
             'refund_window_minutes'=>AdminSetting::get('refund_window_minutes',5),
             'refund_enabled'=>AdminSetting::bool('refund_enabled',true),
@@ -72,51 +69,13 @@ class AdminController extends Controller
     public function saveSettings(Request $request)
     {
         $d=$request->validate([
-            'whmcs_url'=>'required|url|max:500',
-            'whmcs_identifier'=>'required|string|max:190',
-            'whmcs_secret'=>'nullable|string|max:500',
-            'whmcs_timeout'=>'required|integer|min:5|max:120',
-            'whmcs_support_dept_id'=>'required|integer|min:1',
-
-            'bkash_base_url'=>'required|url|max:500',
-            'bkash_app_key'=>'nullable|string|max:500',
-            'bkash_app_secret'=>'nullable|string|max:500',
-            'bkash_username'=>'nullable|string|max:500',
-            'bkash_password'=>'nullable|string|max:500',
-            'bkash_callback_url'=>'required|url|max:500',
-            'bkash_timeout'=>'required|integer|min:5|max:120',
-
-            'checkout_payment_method'=>'required|string|max:50',
-            'refund_window_minutes'=>'required|integer|min:1|max:60',
-            'cart_currency'=>'required|string|max:8',
-            'cart_checkout_notice'=>'nullable|string|max:1000',
-            'cart_terms_url'=>'nullable|url|max:500',
-            'admin_master_email'=>'nullable|email|max:190',
-            'admin_master_password'=>'nullable|string|min:8|max:500',
+            'whmcs_url'=>'required|url|max:500','whmcs_identifier'=>'required|string|max:190','whmcs_secret'=>'nullable|string|max:500','whmcs_timeout'=>'required|integer|min:5|max:120','whmcs_support_dept_id'=>'required|integer|min:1',
+            'bkash_base_url'=>'required|url|max:500','bkash_app_key'=>'nullable|string|max:500','bkash_app_secret'=>'nullable|string|max:500','bkash_username'=>'nullable|string|max:500','bkash_password'=>'nullable|string|max:500','bkash_callback_url'=>'required|url|max:500','bkash_timeout'=>'required|integer|min:5|max:120',
+            'checkout_payment_method'=>'required|string|max:50','refund_window_minutes'=>'required|integer|min:1|max:60','cart_currency'=>'required|string|max:8','cart_checkout_notice'=>'nullable|string|max:1000','cart_terms_url'=>'nullable|url|max:500','admin_master_email'=>'nullable|email|max:190','admin_master_password'=>'nullable|string|min:8|max:500',
         ]);
-
-        foreach ([
-            'whmcs_url','whmcs_identifier','whmcs_timeout','whmcs_support_dept_id',
-            'bkash_base_url','bkash_app_key','bkash_callback_url','bkash_timeout',
-            'checkout_payment_method','refund_window_minutes','cart_currency',
-            'cart_checkout_notice','cart_terms_url','admin_master_email'
-        ] as $key) {
-            $value=$d[$key] ?? '';
-            if ($key==='cart_currency') $value=strtoupper($value);
-            AdminSetting::put($key,$value);
-        }
-
-        foreach (['whmcs_secret','bkash_app_secret','bkash_username','bkash_password','admin_master_password'] as $key) {
-            if (!empty($d[$key])) AdminSetting::put($key,$d[$key]);
-        }
-
-        foreach ([
-            'bkash_enabled','refund_enabled','cart_enabled','cart_show_descriptions',
-            'cart_allow_quantity','auto_accept_order','auto_setup_order','order_email'
-        ] as $key) {
-            AdminSetting::put($key,$request->boolean($key));
-        }
-
+        foreach(['whmcs_url','whmcs_identifier','whmcs_timeout','whmcs_support_dept_id','bkash_base_url','bkash_app_key','bkash_callback_url','bkash_timeout','checkout_payment_method','refund_window_minutes','cart_currency','cart_checkout_notice','cart_terms_url','admin_master_email'] as $key){ $value=$d[$key]??''; if($key==='cart_currency')$value=strtoupper($value); AdminSetting::put($key,$value); }
+        foreach(['whmcs_secret','bkash_app_secret','bkash_username','bkash_password','admin_master_password'] as $key){if(!empty($d[$key]))AdminSetting::put($key,$d[$key]);}
+        foreach(['hosting_panel_enabled','bkash_enabled','refund_enabled','cart_enabled','cart_show_descriptions','cart_allow_quantity','auto_accept_order','auto_setup_order','order_email'] as $key)AdminSetting::put($key,$request->boolean($key));
         return back()->with('success','All portal settings saved successfully.');
     }
 }
