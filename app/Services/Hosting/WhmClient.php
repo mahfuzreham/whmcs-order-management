@@ -47,6 +47,7 @@ class WhmClient
     public function suspend(string $user,string $reason=''): array { return $this->request('suspendacct',['user'=>$user,'reason'=>$reason]); }
     public function unsuspend(string $user): array { return $this->request('unsuspendacct',['user'=>$user]); }
     public function changePackage(string $user,string $pkg): array { return $this->request('changepackage',['user'=>$user,'pkg'=>$pkg]); }
+    public function password(string $user,string $password): array { return $this->request('passwd',['user'=>$user,'pass'=>$password]); }
     public function listPackages(): array { $d=$this->request('listpkgs'); return $d['data']['pkg'] ?? []; }
     public function createPackage(array $data): array { return $this->request('addpkg',$data); }
     public function deletePackage(string $pkg): array { return $this->request('killpkg',['pkg'=>$pkg]); }
