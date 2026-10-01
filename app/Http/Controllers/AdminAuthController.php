@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Staff;
+use App\Models\Staff;\nuse App\Models\AdminSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
@@ -15,8 +15,8 @@ class AdminAuthController extends Controller
         $data=$request->validate(['email'=>'required|email','password'=>'required|string']);
         $staff=Staff::where('email',$data['email'])->where('active',true)->first();
         if(!$staff){
-            $masterEmail=config('services.admin.master_email');
-            $masterPassword=config('services.admin.master_password');
+            $masterEmail=AdminSetting::get('admin_master_email','');
+            $masterPassword=AdminSetting::get('admin_master_password','');
             if($data['email']===$masterEmail && $masterPassword && hash_equals($masterPassword,$data['password'])){
                 $request->session()->regenerate();
                 session(['admin_staff'=>['id'=>0,'name'=>'Master Admin','email'=>$masterEmail,'role'=>'super_admin','permissions'=>['*']]]);
