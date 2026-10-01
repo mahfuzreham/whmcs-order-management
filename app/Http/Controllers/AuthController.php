@@ -32,8 +32,6 @@ class AuthController extends Controller
             ]);
 
             return redirect()->route('login.2fa');
-                'email' => 'Two-factor verification is required. 2FA UI is the next authentication milestone.',
-            ]);
         }
 
         if (!($auth['authenticated'] ?? false)) {
