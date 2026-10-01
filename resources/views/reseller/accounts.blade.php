@@ -1,0 +1,9 @@
+@extends('layouts.app')
+@section('content')
+<div class="page-head"><div><h1>Hosting Accounts</h1><div class="muted">Create, suspend, restore and terminate reseller customer accounts.</div></div><a class="btn" href="{{ route('reseller') }}">Overview</a></div>
+<div class="card" style="overflow:auto"><table style="width:100%;border-collapse:collapse"><tr><th style="text-align:left;padding:10px">Domain</th><th style="text-align:left;padding:10px">Username</th><th style="text-align:left;padding:10px">Package</th><th style="text-align:left;padding:10px">Status</th><th style="padding:10px">Actions</th></tr>
+@forelse($accounts as $a)<tr style="border-top:1px solid #eee"><td style="padding:10px">{{ $a['domain']??'—' }}</td><td style="padding:10px">{{ $a['user']??'—' }}</td><td style="padding:10px">{{ $a['plan']??'—' }}</td><td style="padding:10px">{{ $a['suspended']??'0' ? 'Suspended':'Active' }}</td><td style="padding:10px;display:flex;gap:6px">
+@if(($a['suspended']??'0')==='1')<form method="POST" action="{{ route('reseller.accounts.unsuspend',$a['user']) }}">@csrf<button class="btn btn-light">Unsuspend</button></form>@else<form method="POST" action="{{ route('reseller.accounts.suspend',$a['user']) }}">@csrf<button class="btn btn-light">Suspend</button></form>@endif
+<form method="POST" action="{{ route('reseller.accounts.terminate',$a['user']) }}" onsubmit="return confirm('Terminate this hosting account?')">@csrf<button class="btn" type="submit">Terminate</button></form>
+</td></tr>@empty<tr><td colspan="5" class="empty">No hosting accounts found or WHM API is not configured.</td></tr>@endforelse</table></div>
+@endsection
