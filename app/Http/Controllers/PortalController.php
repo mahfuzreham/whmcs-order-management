@@ -13,105 +13,94 @@ class PortalController extends Controller
 
     public function services(): View
     {
-        $client = session('whmcs_client', []);
-        $data = $this->whmcs->call('GetClientsProducts', ['clientid' => $client['id'] ?? 0]);
-        return view('portal.services', [
-            'products' => $data['products']['product'] ?? [],
-        ]);
+        $client=session('whmcs_client',[]);
+        $data=$this->whmcs->call('GetClientsProducts',['clientid'=>$client['id'] ?? 0]);
+        return view('portal.services',['products'=>$data['products']['product'] ?? []]);
     }
 
     public function service(int $id): View
     {
-        $client = session('whmcs_client', []);
-        $service = $this->whmcs->service((int) ($client['id'] ?? 0), $id);
-        abort_unless($service, 404);
-        return view('portal.service', compact('service'));
+        $client=session('whmcs_client',[]);
+        $service=$this->whmcs->service((int)($client['id'] ?? 0),$id);
+        abort_unless($service,404);
+        return view('portal.service',compact('service'));
     }
 
     public function invoice(int $id): View
     {
-        $client = session('whmcs_client', []);
-        $invoice = $this->whmcs->invoice((int) ($client['id'] ?? 0), $id);
-        abort_unless($invoice, 404);
-        $payment = PortalPayment::where('client_id',(int)($client['id'] ?? 0))->where('invoice_id',$id)->where('status','paid')->latest()->first();
-        $serviceActive = false;
-        foreach (($invoice['items']['item'] ?? []) as $item) {
-            $serviceId = (int)($item['relid'] ?? 0);
-            if ($serviceId > 0) {
-                $service = $this->whmcs->service((int)($client['id'] ?? 0), $serviceId);
-                if (strtolower($service['status'] ?? '') === 'active') { $serviceActive = true; break; }
+        $client=session('whmcs_client',[]);
+        $invoice=$this->whmcs->invoice((int)($client['id'] ?? 0),$id);
+        abort_unless($invoice,404);
+        $payment=PortalPayment::where('client_id',(int)($client['id'] ?? 0))->where('invoice_id',$id)->where('status','paid')->latest()->first();
+        $serviceActive=false;
+        foreach(($invoice['items']['item'] ?? []) as $item){
+            $serviceId=(int)($item['relid'] ?? 0);
+            if($serviceId>0){
+                $service=$this->whmcs->service((int)($client['id'] ?? 0),$serviceId);
+                if(strtolower($service['status'] ?? '')==='active'){ $serviceActive=true; break; }
             }
         }
-        return view('portal.invoice', compact('invoice','payment','serviceActive'));
+        return view('portal.invoice',compact('invoice','payment','serviceActive'));
     }
 
     public function transactions(): View
     {
-        $client = session('whmcs_client', []);
-        return view('portal.transactions', [
-            'transactions' => $this->whmcs->transactions((int) ($client['id'] ?? 0)),
-        ]);
+        $client=session('whmcs_client',[]);
+        return view('portal.transactions',['transactions'=>$this->whmcs->transactions((int)($client['id'] ?? 0))]);
     }
 
     public function tickets(): View
     {
-        $client = session('whmcs_client', []);
-        return view('portal.tickets', [
-            'tickets' => $this->whmcs->tickets((int) ($client['id'] ?? 0)),
-        ]);
+        $client=session('whmcs_client',[]);
+        return view('portal.tickets',['tickets'=>$this->whmcs->tickets((int)($client['id'] ?? 0))]);
+    }
+
+    public function orders(): View
+    {
+        $client=session('whmcs_client',[]);
+        $data=$this->whmcs->call('GetOrders',['userid'=>(int)($client['id'] ?? 0),'limitnum'=>100]);
+        return view('portal.orders',['orders'=>$data['orders']['order'] ?? []]);
     }
 
     public function ticket(int $id): View
     {
-        $client = session('whmcs_client', []);
-        $ticket = $this->whmcs->ticket((int) ($client['id'] ?? 0), $id);
-        abort_unless($ticket, 404);
-        return view('portal.ticket', compact('ticket'));
+        $client=session('whmcs_client',[]);
+        $ticket=$this->whmcs->ticket((int)($client['id'] ?? 0),$id);
+        abort_unless($ticket,404);
+        return view('portal.ticket',compact('ticket'));
     }
 
     public function createTicket(Request $request)
     {
-        $data = $request->validate([
-            'subject' => ['required','string','max:200'],
-            'message' => ['required','string','max:10000'],
-            'priority' => ['nullable','in:Low,Medium,High'],
-        ]);
-        $client = session('whmcs_client', []);
-        $result = $this->whmcs->openTicket((int) ($client['id'] ?? 0), $data);
-        if (($result['result'] ?? null) !== 'success') {
-            return back()->withErrors(['ticket' => $result['message'] ?? 'Unable to open ticket.']);
-        }
-        return redirect()->route('tickets')->with('success', 'Support ticket created.');
+        $data=$request->validate(['subject'=>['required','string','max:200'],'message'=>['required','string','max:10000'],'priority'=>['nullable','in:Low,Medium,High']]);
+        $client=session('whmcs_client',[]);
+        $result=$this->whmcs->openTicket((int)($client['id'] ?? 0),$data);
+        if(($result['result'] ?? null)!=='success') return back()->withErrors(['ticket'=>$result['message'] ?? 'Unable to open ticket.']);
+        return redirect()->route('tickets')->with('success','Support ticket created.');
     }
 
-    public function replyTicket(Request $request, int $id)
+    public function replyTicket(Request $request,int $id)
     {
-        $data = $request->validate(['message' => ['required','string','max:10000']]);
-        $client = session('whmcs_client', []);
-        $ticket = $this->whmcs->ticket((int) ($client['id'] ?? 0), $id);
-        abort_unless($ticket, 404);
-        $result = $this->whmcs->replyTicket((int) ($client['id'] ?? 0), $id, $data['message']);
-        if (($result['result'] ?? null) !== 'success') {
-            return back()->withErrors(['message' => $result['message'] ?? 'Unable to send reply.']);
-        }
-        return back()->with('success', 'Reply sent.');
+        $data=$request->validate(['message'=>['required','string','max:10000']]);
+        $client=session('whmcs_client',[]);
+        $ticket=$this->whmcs->ticket((int)($client['id'] ?? 0),$id);
+        abort_unless($ticket,404);
+        $result=$this->whmcs->replyTicket((int)($client['id'] ?? 0),$id,$data['message']);
+        if(($result['result'] ?? null)!=='success') return back()->withErrors(['message'=>$result['message'] ?? 'Unable to send reply.']);
+        return back()->with('success','Reply sent.');
     }
 
     public function domains(): View
     {
-        $client = session('whmcs_client', []);
-        $data = $this->whmcs->call('GetClientsDomains', ['clientid' => $client['id'] ?? 0]);
-        return view('portal.domains', [
-            'domains' => $data['domains']['domain'] ?? [],
-        ]);
+        $client=session('whmcs_client',[]);
+        $data=$this->whmcs->call('GetClientsDomains',['clientid'=>$client['id'] ?? 0]);
+        return view('portal.domains',['domains'=>$data['domains']['domain'] ?? []]);
     }
 
     public function invoices(): View
     {
-        $client = session('whmcs_client', []);
-        $data = $this->whmcs->call('GetInvoices', ['userid' => $client['id'] ?? 0]);
-        return view('portal.invoices', [
-            'invoices' => $data['invoices']['invoice'] ?? [],
-        ]);
+        $client=session('whmcs_client',[]);
+        $data=$this->whmcs->call('GetInvoices',['userid'=>$client['id'] ?? 0]);
+        return view('portal.invoices',['invoices'=>$data['invoices']['invoice'] ?? []]);
     }
 }
