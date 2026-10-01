@@ -8,7 +8,7 @@
 <p><strong>Total:</strong> {{ $invoice['total'] }}</p>
 <p><strong>Balance:</strong> {{ $invoice['balance'] }}</p>
 @if(($invoice['status'] ?? '') !== 'Paid')
-<a class="btn" href="{{ url('/pay/invoice/'.$invoice['invoiceid']) }}">Pay Invoice</a>
+<a class="btn" href="{{ route('payment.show', $invoice['invoiceid']) }}">Pay Invoice</a>
 @endif
 </div>
 @endsection
