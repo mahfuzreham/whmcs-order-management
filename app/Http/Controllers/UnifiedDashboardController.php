@@ -26,8 +26,8 @@ class UnifiedDashboardController extends Controller
         $data = $request->validate(['email'=>'required|email','password'=>'required|string']);
 
         $staff = Staff::where('email',$data['email'])->where('active',true)->first();
-        $masterEmail = config('services.admin.master_email');
-        $masterPassword = config('services.admin.master_password');
+        $masterEmail = AdminSetting::get('admin_master_email', '');
+        $masterPassword = AdminSetting::get('admin_master_password', '');
 
         if (($staff && $staff->checkPassword($data['password'])) ||
             (!$staff && $masterEmail && $data['email'] === $masterEmail && $masterPassword && hash_equals($masterPassword,$data['password']))) {
