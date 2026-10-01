@@ -74,6 +74,7 @@
         <a class="{{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">Overview</a>
         <a class="{{ request()->routeIs('services','service') ? 'active' : '' }}" href="{{ route('services') }}">Services</a>
         <a class="{{ request()->routeIs('domains') ? 'active' : '' }}" href="{{ route('domains') }}">Domains</a>
+        <a class="{{ request()->routeIs('orders') ? 'active' : '' }}" href="{{ route('orders') }}">Orders</a>
         <a class="{{ request()->routeIs('invoices','invoice','payment.show') ? 'active' : '' }}" href="{{ route('invoices') }}">Invoices</a>
         <a class="{{ request()->routeIs('transactions') ? 'active' : '' }}" href="{{ route('transactions') }}">Transactions</a>
         <a class="{{ request()->routeIs('tickets','ticket') ? 'active' : '' }}" href="{{ route('tickets') }}">Support Tickets</a>
