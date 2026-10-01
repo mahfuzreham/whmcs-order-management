@@ -2,48 +2,53 @@
 
 namespace App\Services\Payments;
 
+use App\Models\AdminSetting;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 class BkashGateway
 {
     protected string $base;
+    protected int $timeout;
 
     public function __construct()
     {
-        $this->base = rtrim(config('services.bkash.base_url', 'https://tokenized.pay.bka.sh/v1.2.0-beta'), '/');
+        $this->base = rtrim((string) AdminSetting::get('bkash_base_url', 'https://tokenized.pay.bka.sh/v1.2.0-beta'), '/');
+        $this->timeout = (int) AdminSetting::get('bkash_timeout', 20);
     }
 
     protected function token(): string
     {
-        $r = Http::timeout((int) config('services.bkash.timeout', 20))
+        $r = Http::timeout($this->timeout)
             ->acceptJson()
             ->withHeaders([
-                'username' => config('services.bkash.username'),
-                'password' => config('services.bkash.password'),
+                'username' => AdminSetting::get('bkash_username', ''),
+                'password' => AdminSetting::get('bkash_password', ''),
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
-                'X-App-Key' => config('services.bkash.app_key'),
+                'X-App-Key' => AdminSetting::get('bkash_app_key', ''),
             ])->post($this->base.'/tokenized/checkout/token/grant', [
-                'app_key' => config('services.bkash.app_key'),
-                'app_secret' => config('services.bkash.app_secret'),
+                'app_key' => AdminSetting::get('bkash_app_key', ''),
+                'app_secret' => AdminSetting::get('bkash_app_secret', ''),
             ]);
 
         if ($r->failed() || !$r->json('id_token')) {
             throw new RuntimeException($r->json('statusMessage') ?: 'Unable to obtain bKash token.');
         }
+
         return $r->json('id_token');
     }
 
     protected function request(string $method, string $path, string $token, array $data = [])
     {
-        $http = Http::timeout((int) config('services.bkash.timeout', 20))
+        $http = Http::timeout($this->timeout)
             ->acceptJson()
             ->withHeaders([
                 'Authorization' => $token,
-                'X-App-Key' => config('services.bkash.app_key'),
+                'X-App-Key' => AdminSetting::get('bkash_app_key', ''),
                 'Content-Type' => 'application/json',
             ]);
+
         return $method === 'get'
             ? $http->get($this->base.$path, $data)
             : $http->post($this->base.$path, $data);
@@ -55,15 +60,17 @@ class BkashGateway
         $r = $this->request('post', '/tokenized/checkout/create', $token, [
             'mode' => '0011',
             'payerReference' => $reference,
-            'callbackURL' => config('services.bkash.callback_url'),
+            'callbackURL' => AdminSetting::get('bkash_callback_url', ''),
             'amount' => number_format((float)$amount, 2, '.', ''),
             'currency' => 'BDT',
             'intent' => 'sale',
             'merchantInvoiceNumber' => $reference,
         ]);
+
         if ($r->failed() || !$r->json('paymentID')) {
             throw new RuntimeException($r->json('statusMessage') ?: 'Unable to create bKash payment.');
         }
+
         return $r->json();
     }
 
@@ -83,6 +90,7 @@ class BkashGateway
             'sku' => $sku,
             'reason' => $reason,
         ]);
+
         if ($r->failed()) throw new RuntimeException($r->json('statusMessage') ?: 'bKash refund request failed.');
         return $r->json();
     }
