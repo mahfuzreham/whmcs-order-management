@@ -10,6 +10,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PortalController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\InstallController;
+use App\Http\Controllers\HostingController;
 
 Route::get('/install', [InstallController::class, 'index'])->name('install');
 Route::post('/install', [InstallController::class, 'configure'])->name('install.configure');
@@ -50,6 +51,9 @@ Route::middleware('admin.auth')->group(function () {
 
 Route::middleware('portal.auth')->group(function () {
     Route::get('/dashboard/home', DashboardController::class)->name('dashboard.home');
+    Route::get('/dashboard/hosting', [HostingController::class, 'index'])->name('hosting');
+    Route::get('/dashboard/hosting/{id}', [HostingController::class, 'service'])->name('hosting.service');
+    Route::get('/dashboard/hosting/{id}/cpanel', [HostingController::class, 'cpanel'])->name('hosting.cpanel');
     Route::get('/cart/checkout', [CartController::class, 'checkout'])->name('cart.checkout');
     Route::post('/cart/checkout', [CartController::class, 'placeOrder'])->name('cart.checkout.place');
 
