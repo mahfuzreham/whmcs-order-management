@@ -22,7 +22,7 @@
 </div>
 <script>
 (function(){
- const expires={{ $payment->completed_at->timestamp }}+({{ (int)config('services.refund.window_minutes',5) }}*60);
+ const expires={{ $payment->completed_at->timestamp }}+({{ (int)\App\Models\AdminSetting::get('refund_window_minutes', config('services.refund.window_minutes',5)) }}*60);
  const timer=document.getElementById('refund-timer'), form=document.getElementById('refund-form'), button=document.getElementById('refund-button');
  function tick(){let left=Math.max(0,expires-Math.floor(Date.now()/1000));let m=Math.floor(left/60),s=left%60;timer.textContent=m+':'+String(s).padStart(2,'0');if(left<=0){form.style.display='none';document.getElementById('refund-note').textContent='The instant refund window has expired.';}}
  tick();setInterval(tick,1000);
