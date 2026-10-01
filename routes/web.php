@@ -44,6 +44,9 @@ Route::middleware('admin.auth')->group(function () {
 
 Route::middleware('portal.auth')->group(function () {
     Route::get('/dashboard/home', DashboardController::class)->name('dashboard.home');
+    Route::get('/cart/checkout', [CartController::class, 'checkout'])->name('cart.checkout');
+    Route::post('/cart/checkout', [CartController::class, 'placeOrder'])->name('cart.checkout.place');
+
     Route::prefix('dashboard')->group(function () {
         Route::get('/services', [PortalController::class, 'services'])->name('services');
         Route::get('/services/{id}', [PortalController::class, 'service'])->name('service');
@@ -58,5 +61,6 @@ Route::middleware('portal.auth')->group(function () {
         Route::post('/tickets', [PortalController::class, 'createTicket'])->name('tickets.create');
         Route::get('/tickets/{id}', [PortalController::class, 'ticket'])->name('ticket');
         Route::post('/tickets/{id}/reply', [PortalController::class, 'replyTicket'])->name('ticket.reply');
+        Route::get('/orders', [PortalController::class, 'orders'])->name('orders');
     });
 });
