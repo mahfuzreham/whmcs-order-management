@@ -2,26 +2,35 @@
 
 namespace App\Services\Whmcs;
 
+use App\Models\AdminSetting;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 class WhmcsClient
 {
-    public function __construct(protected string $url = '')
+    protected string $url;
+    protected int $timeout;
+
+    public function __construct()
     {
-        $this->url = rtrim(config('services.whmcs.url'), '/');
+        $this->url = rtrim((string) AdminSetting::get('whmcs_url', ''), '/');
+        $this->timeout = (int) AdminSetting::get('whmcs_timeout', 15);
     }
 
     public function call(string $action, array $params = []): array
     {
+        if ($this->url === '') {
+            throw new RuntimeException('WHMCS API is not configured. Please configure it from Admin Settings.');
+        }
+
         $payload = array_merge([
             'action' => $action,
-            'identifier' => config('services.whmcs.identifier'),
-            'secret' => config('services.whmcs.secret'),
+            'identifier' => AdminSetting::get('whmcs_identifier', ''),
+            'secret' => AdminSetting::get('whmcs_secret', ''),
             'responsetype' => 'json',
         ], $params);
 
-        $response = Http::timeout((int) config('services.whmcs.timeout', 15))
+        $response = Http::timeout($this->timeout)
             ->asForm()
             ->post($this->url . '/includes/api.php', $payload);
 
@@ -34,7 +43,11 @@ class WhmcsClient
 
     public function authenticateCustomer(string $email, string $password): array
     {
-        $response = Http::timeout((int) config('services.whmcs.timeout', 15))
+        if ($this->url === '') {
+            return ['authenticated' => false, 'message' => 'WHMCS API is not configured.'];
+        }
+
+        $response = Http::timeout($this->timeout)
             ->acceptJson()
             ->post($this->url . '/api/v2/user/session', [
                 'email' => $email,
@@ -51,7 +64,6 @@ class WhmcsClient
             return ['authenticated' => false, 'message' => 'Invalid authentication response.'];
         }
 
-        // WHMCS may require a separate 2FA verification step.
         if (($data['requiresVerification'] ?? false) || ($data['requires_2fa'] ?? false)) {
             return [
                 'authenticated' => false,
@@ -70,7 +82,7 @@ class WhmcsClient
 
     public function verifyTwoFactor(string $state, string $code): array
     {
-        $response = Http::timeout((int) config('services.whmcs.timeout', 15))
+        $response = Http::timeout($this->timeout)
             ->acceptJson()
             ->withHeaders(['X-Api-State' => $state])
             ->post($this->url . '/api/v2/user/session/verify', [
@@ -98,15 +110,10 @@ class WhmcsClient
     public function findClientByEmail(string $email): ?array
     {
         $data = $this->call('GetClients', ['search' => $email, 'limitnum' => 25]);
-
-        if (($data['result'] ?? null) !== 'success') {
-            return null;
-        }
+        if (($data['result'] ?? null) !== 'success') return null;
 
         foreach (($data['clients']['client'] ?? []) as $client) {
-            if (strcasecmp($client['email'] ?? '', $email) === 0) {
-                return $client;
-            }
+            if (strcasecmp($client['email'] ?? '', $email) === 0) return $client;
         }
 
         return null;
@@ -115,16 +122,13 @@ class WhmcsClient
     public function service(int $clientId, int $serviceId): ?array
     {
         $data = $this->call('GetClientsProducts', ['clientid' => $clientId, 'serviceid' => $serviceId]);
-        $items = $data['products']['product'] ?? [];
-        return $items[0] ?? null;
+        return $data['products']['product'][0] ?? null;
     }
 
     public function invoice(int $clientId, int $invoiceId): ?array
     {
         $data = $this->call('GetInvoice', ['invoiceid' => $invoiceId]);
-        if (($data['result'] ?? null) !== 'success' || (int) ($data['userid'] ?? 0) !== $clientId) {
-            return null;
-        }
+        if (($data['result'] ?? null) !== 'success' || (int) ($data['userid'] ?? 0) !== $clientId) return null;
         return $data;
     }
 
@@ -143,9 +147,7 @@ class WhmcsClient
     public function ticket(int $clientId, int $ticketId): ?array
     {
         $data = $this->call('GetTicket', ['ticketid' => $ticketId, 'repliessort' => 'ASC']);
-        if (($data['result'] ?? null) !== 'success' || (int) ($data['userid'] ?? 0) !== $clientId) {
-            return null;
-        }
+        if (($data['result'] ?? null) !== 'success' || (int) ($data['userid'] ?? 0) !== $clientId) return null;
         return $data;
     }
 
@@ -153,7 +155,7 @@ class WhmcsClient
     {
         return $this->call('OpenTicket', array_merge([
             'clientid' => $clientId,
-            'deptid' => (int) config('services.whmcs.support_dept_id'),
+            'deptid' => (int) AdminSetting::get('whmcs_support_dept_id', 1),
             'priority' => 'Medium',
         ], $data));
     }
@@ -169,9 +171,7 @@ class WhmcsClient
 
     public function dashboardSummary(?int $clientId): array
     {
-        if (!$clientId) {
-            return ['services' => 0, 'domains' => 0, 'unpaid' => 0];
-        }
+        if (!$clientId) return ['services' => 0, 'domains' => 0, 'unpaid' => 0];
 
         $products = $this->call('GetClientsProducts', ['clientid' => $clientId]);
         $domains = $this->call('GetClientsDomains', ['clientid' => $clientId]);
