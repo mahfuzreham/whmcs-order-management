@@ -29,6 +29,22 @@
 
 <hr style="border:0;border-top:1px solid #eee;margin:24px 0">
 
+<h2>Reseller Hosting / WHM API</h2>
+<label><input type="checkbox" name="reseller_enabled" value="1" @checked($settings['reseller_enabled'])> Enable Reseller Hosting module</label>
+<p class="muted">The module is off by default. Reseller access is granted only when the customer has an active WHMCS service whose product/group contains “reseller”.</p>
+<label>WHM Hostname</label>
+<input class="input" name="whm_host" value="{{ $settings['whm_host'] }}" placeholder="server.example.com">
+<label>WHM API Port</label>
+<input class="input" type="number" name="whm_port" value="{{ $settings['whm_port'] }}">
+<label>WHM API Token</label>
+<input class="input" type="password" name="whm_api_token" placeholder="{{ $settings['whm_api_token_configured'] ? 'Configured — leave blank to keep current token' : 'Enter WHM API token' }}">
+<label><input type="checkbox" name="whm_verify_ssl" value="1" @checked($settings['whm_verify_ssl'])> Verify WHM SSL certificate</label>
+<label>WHM API Timeout</label>
+<input class="input" type="number" min="5" max="120" name="whm_timeout" value="{{ $settings['whm_timeout'] }}">
+<p class="muted">Use a restricted WHM API token where your server/provider supports it. Never expose this token to customers or resellers.</p>
+
+<hr style="border:0;border-top:1px solid #eee;margin:24px 0">
+
 <h2>Web Hosting Control Panel</h2>
 <label><input type="checkbox" name="hosting_panel_enabled" value="1" @checked($settings['hosting_panel_enabled'])> Enable custom Hosting Panel</label>
 <p class="muted">Disabled by default. When disabled, customers still get the cPanel fallback from their WHMCS hosting service. Enable this when the custom WHM/cPanel API panel is ready.</p>
