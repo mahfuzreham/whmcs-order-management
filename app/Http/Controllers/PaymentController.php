@@ -85,11 +85,11 @@ class PaymentController extends Controller
             }
 
             $acceptResult=null;
-            if((int)$payment->order_id>0){
+            if (AdminSetting::bool('auto_accept_order', true) && (int)$payment->order_id>0) {
                 $acceptResult=$this->whmcs->call('AcceptOrder',[
                     'orderid'=>(int)$payment->order_id,
-                    'autosetup'=>true,
-                    'sendemail'=>true,
+                    'autosetup'=>AdminSetting::bool('auto_setup_order', true),
+                    'sendemail'=>AdminSetting::bool('order_email', true),
                 ]);
                 // Payment is already confirmed. A provisioning/acceptance error must not turn a successful payment into a failed payment.
                 if(($acceptResult['result'] ?? '')!=='success'){
