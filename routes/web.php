@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\InstallController;
 use App\Http\Controllers\HostingController;
 use App\Http\Controllers\ResellerController;
+use App\Http\Controllers\UpdateController;
 
 Route::get('/install', [InstallController::class, 'index'])->name('install');
 Route::post('/install', [InstallController::class, 'configure'])->name('install.configure');
@@ -48,6 +49,10 @@ Route::middleware('admin.auth')->group(function () {
     Route::delete('/admin/staff/{id}', [AdminController::class, 'deleteStaff'])->middleware('admin.permission:staff.manage')->name('admin.staff.delete');
     Route::get('/admin/settings', [AdminController::class, 'settings'])->middleware('admin.permission:settings.manage')->name('admin.settings');
     Route::post('/admin/settings', [AdminController::class, 'saveSettings'])->middleware('admin.permission:settings.manage')->name('admin.settings.save');
+    Route::get('/admin/updates', [UpdateController::class, 'index'])->middleware('admin.permission:settings.manage')->name('admin.updates');
+    Route::post('/admin/updates/check', [UpdateController::class, 'check'])->middleware('admin.permission:settings.manage')->name('admin.updates.check');
+    Route::post('/admin/updates/install', [UpdateController::class, 'install'])->middleware('admin.permission:settings.manage')->name('admin.updates.install');
+    Route::post('/admin/updates/settings', [UpdateController::class, 'saveSettings'])->middleware('admin.permission:settings.manage')->name('admin.updates.settings');
 });
 
 Route::middleware('portal.auth')->group(function () {
