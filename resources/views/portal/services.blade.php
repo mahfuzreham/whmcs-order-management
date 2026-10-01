@@ -4,7 +4,7 @@
 <div class="list">
 @forelse($products as $product)
 <div class="card row-card">
-    <div><strong>{{ $product['name'] ?? 'Service' }}</strong><div class="muted">{{ $product['domain'] ?? 'No domain' }}</div></div>
+    <div><strong><a href="{{ route('service', $product['id'] ?? 0) }}" style="color:inherit">{{ $product['name'] ?? 'Service' }}</a></strong><div class="muted">{{ $product['domain'] ?? 'No domain' }}</div></div>
     <span class="badge">{{ $product['status'] ?? 'Unknown' }}</span>
 </div>
 @empty
