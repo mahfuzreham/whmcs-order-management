@@ -33,14 +33,14 @@ class AdminController extends Controller
     public function deleteStaff(int $id){ Staff::findOrFail($id)->delete(); return back()->with('success','Staff account deleted.'); }
 
     public function settings(){ return view('admin.settings',['settings'=>[
-        'refund_window_minutes'=>config('services.refund.window_minutes',5),
+        'refund_window_minutes'=>AdminSetting::get('refund_window_minutes',config('services.refund.window_minutes',5)),
         'bkash_enabled'=>config('services.bkash.enabled',false),
     ]]); }
 
     public function saveSettings(Request $request)
     {
         $d=$request->validate(['refund_window_minutes'=>'required|integer|min:1|max:60']);
-        file_put_contents(storage_path('app/admin-settings.json'),json_encode($d,JSON_PRETTY_PRINT));
+        AdminSetting::put('refund_window_minutes',$d['refund_window_minutes']);
         return back()->with('success','Settings saved. Put permanent values in .env for production.');
     }
 }
