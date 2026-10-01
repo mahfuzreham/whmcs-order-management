@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\Whmcs\WhmcsClient;
+use App\Models\PortalPayment;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -32,7 +33,16 @@ class PortalController extends Controller
         $client = session('whmcs_client', []);
         $invoice = $this->whmcs->invoice((int) ($client['id'] ?? 0), $id);
         abort_unless($invoice, 404);
-        return view('portal.invoice', compact('invoice'));
+        $payment = PortalPayment::where('client_id',(int)($client['id'] ?? 0))->where('invoice_id',$id)->where('status','paid')->latest()->first();
+        $serviceActive = false;
+        foreach (($invoice['items']['item'] ?? []) as $item) {
+            $serviceId = (int)($item['relid'] ?? 0);
+            if ($serviceId > 0) {
+                $service = $this->whmcs->service((int)($client['id'] ?? 0), $serviceId);
+                if (strtolower($service['status'] ?? '') === 'active') { $serviceActive = true; break; }
+            }
+        }
+        return view('portal.invoice', compact('invoice','payment','serviceActive'));
     }
 
     public function transactions(): View
