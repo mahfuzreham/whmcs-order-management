@@ -7,9 +7,8 @@ use RuntimeException;
 
 class WhmcsClient
 {
-    public function __construct(
-        protected string $url = ''
-    ) {
+    public function __construct(protected string $url = '')
+    {
         $this->url = rtrim(config('services.whmcs.url'), '/');
     }
 
@@ -30,18 +29,52 @@ class WhmcsClient
             throw new RuntimeException('WHMCS API request failed with HTTP '.$response->status());
         }
 
-        $data = $response->json();
+        return $response->json() ?: ['result' => 'error', 'message' => 'Invalid WHMCS response'];
+    }
 
-        if (!is_array($data) || ($data['result'] ?? null) !== 'success') {
-            return $data ?: ['result' => 'error', 'message' => 'Invalid WHMCS response'];
+    public function authenticateCustomer(string $email, string $password): array
+    {
+        $response = Http::timeout((int) config('services.whmcs.timeout', 15))
+            ->acceptJson()
+            ->post($this->url . '/api/v2/user/session', [
+                'email' => $email,
+                'password' => $password,
+            ]);
+
+        if ($response->failed()) {
+            return ['authenticated' => false, 'message' => 'Invalid email or password.'];
         }
 
-        return $data;
+        $data = $response->json();
+
+        if (!is_array($data)) {
+            return ['authenticated' => false, 'message' => 'Invalid authentication response.'];
+        }
+
+        // WHMCS may require a separate 2FA verification step.
+        if (($data['requiresVerification'] ?? false) || ($data['requires_2fa'] ?? false)) {
+            return [
+                'authenticated' => false,
+                'requires_2fa' => true,
+                'api_state' => $data['apiState'] ?? $data['api_state'] ?? null,
+                'message' => 'Two-factor authentication is required.',
+            ];
+        }
+
+        return [
+            'authenticated' => true,
+            'api_state' => $data['apiState'] ?? $data['api_state'] ?? null,
+            'session' => $data,
+        ];
     }
 
     public function findClientByEmail(string $email): ?array
     {
-        $data = $this->call('GetClients', ['email' => $email]);
+        $data = $this->call('GetClients', ['search' => $email, 'limitnum' => 25]);
+
+        if (($data['result'] ?? null) !== 'success') {
+            return null;
+        }
 
         foreach (($data['clients']['client'] ?? []) as $client) {
             if (strcasecmp($client['email'] ?? '', $email) === 0) {
