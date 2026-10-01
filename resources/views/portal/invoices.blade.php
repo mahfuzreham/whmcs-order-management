@@ -4,7 +4,7 @@
 <div class="list">
 @forelse($invoices as $invoice)
 <div class="card row-card">
-    <div><strong>Invoice #{{ $invoice['id'] ?? '—' }}</strong><div class="muted">{{ $invoice['date'] ?? '—' }} · Due {{ $invoice['duedate'] ?? '—' }}</div></div>
+    <div><strong><a href="{{ route('invoice', $invoice['id'] ?? 0) }}" style="color:inherit">Invoice #{{ $invoice['id'] ?? '—' }}</a></strong><div class="muted">{{ $invoice['date'] ?? '—' }} · Due {{ $invoice['duedate'] ?? '—' }}</div></div>
     <div style="text-align:right"><strong>{{ $invoice['currencyprefix'] ?? '' }}{{ $invoice['total'] ?? '0.00' }}{{ $invoice['currencysuffix'] ?? '' }}</strong><div class="badge">{{ $invoice['status'] ?? 'Unknown' }}</div></div>
 </div>
 @empty
