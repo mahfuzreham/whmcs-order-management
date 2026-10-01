@@ -11,6 +11,7 @@ use App\Http\Controllers\PortalController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\InstallController;
 use App\Http\Controllers\HostingController;
+use App\Http\Controllers\ResellerController;
 
 Route::get('/install', [InstallController::class, 'index'])->name('install');
 Route::post('/install', [InstallController::class, 'configure'])->name('install.configure');
@@ -54,6 +55,17 @@ Route::middleware('portal.auth')->group(function () {
     Route::get('/dashboard/hosting', [HostingController::class, 'index'])->name('hosting');
     Route::get('/dashboard/hosting/{id}', [HostingController::class, 'service'])->name('hosting.service');
     Route::get('/dashboard/hosting/{id}/cpanel', [HostingController::class, 'cpanel'])->name('hosting.cpanel');
+
+    Route::prefix('dashboard/reseller')->group(function () {
+        Route::get('/', [ResellerController::class, 'index'])->name('reseller');
+        Route::get('/accounts', [ResellerController::class, 'accounts'])->name('reseller.accounts');
+        Route::post('/accounts', [ResellerController::class, 'createAccount'])->name('reseller.accounts.create');
+        Route::post('/accounts/{user}/suspend', [ResellerController::class, 'suspend'])->name('reseller.accounts.suspend');
+        Route::post('/accounts/{user}/unsuspend', [ResellerController::class, 'unsuspend'])->name('reseller.accounts.unsuspend');
+        Route::post('/accounts/{user}/terminate', [ResellerController::class, 'terminate'])->name('reseller.accounts.terminate');
+        Route::get('/packages', [ResellerController::class, 'packages'])->name('reseller.packages');
+    });
+
     Route::get('/cart/checkout', [CartController::class, 'checkout'])->name('cart.checkout');
     Route::post('/cart/checkout', [CartController::class, 'placeOrder'])->name('cart.checkout.place');
 
