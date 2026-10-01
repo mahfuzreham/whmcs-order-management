@@ -3,6 +3,7 @@
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\UnifiedDashboardController;
 use App\Http\Controllers\AdminAuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\PaymentController;
@@ -18,6 +19,9 @@ Route::post('/cart/remove/{key}', [CartController::class, 'remove'])->name('cart
 Route::get('/admin/login', [AdminAuthController::class, 'showLogin'])->name('admin.login');
 Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login.submit');
 Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
+
+Route::get('/dashboard', [UnifiedDashboardController::class, 'show'])->name('dashboard');
+Route::post('/dashboard', [UnifiedDashboardController::class, 'login'])->name('dashboard.login');
 
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
@@ -39,7 +43,7 @@ Route::middleware('admin.auth')->group(function () {
 });
 
 Route::middleware('portal.auth')->group(function () {
-    Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/account', DashboardController::class)->name('account.dashboard');
     Route::get('/services', [PortalController::class, 'services'])->name('services');
     Route::get('/services/{id}', [PortalController::class, 'service'])->name('service');
     Route::get('/domains', [PortalController::class, 'domains'])->name('domains');
