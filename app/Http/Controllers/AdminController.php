@@ -7,12 +7,17 @@ use App\Models\AdminSetting;
 use App\Models\Staff;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use App\Services\Update\UpdateService;
 
 class AdminController extends Controller
 {
     public const PERMISSIONS=['dashboard.view','payments.view','payments.refund','staff.view','staff.manage','settings.manage','hosting.manage','reseller.manage'];
 
-    public function dashboard(){ return view('admin.dashboard',['payments'=>PortalPayment::latest()->limit(10)->get(),'staffCount'=>Staff::count()]); }
+    public function dashboard(){
+        $updateInfo=null;
+        try { $updateInfo=app(UpdateService::class)->check(); } catch (\\Throwable $e) { $updateInfo=['error'=>$e->getMessage(),'current'=>config('version.version','1.0.0')]; }
+        return view('admin.dashboard',['payments'=>PortalPayment::latest()->limit(10)->get(),'staffCount'=>Staff::count(),'updateInfo'=>$updateInfo]);
+    }
 
     public function payments(){ return view('admin.payments',['payments'=>PortalPayment::latest()->paginate(30)]); }
 
