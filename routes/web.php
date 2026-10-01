@@ -9,6 +9,12 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PortalController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\InstallController;
+
+Route::get('/install', [InstallController::class, 'index'])->name('install');
+Route::post('/install', [InstallController::class, 'configure'])->name('install.configure');
+Route::get('/install/run', [InstallController::class, 'run'])->name('install.run');
+Route::get('/install/done', [InstallController::class, 'done'])->name('install.done');
 
 Route::get('/', fn () => redirect()->route('dashboard'));
 
