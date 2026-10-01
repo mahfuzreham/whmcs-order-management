@@ -34,6 +34,8 @@
 <p class="muted">The module is off by default. Reseller access is granted only when the customer has an active WHMCS service whose product/group contains “reseller”.</p>
 <label>WHM Hostname</label>
 <input class="input" name="whm_host" value="{{ $settings['whm_host'] }}" placeholder="server.example.com">
+<label>WHM API Username</label>
+<input class="input" name="whm_username" value="{{ $settings['whm_username'] }}" placeholder="root or reseller username">
 <label>WHM API Port</label>
 <input class="input" type="number" name="whm_port" value="{{ $settings['whm_port'] }}">
 <label>WHM API Token</label>
