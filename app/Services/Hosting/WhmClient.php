@@ -19,7 +19,7 @@ class WhmClient
 
         $host=preg_replace('#^https?://#i','',$host);
         $url='https://'.$host.':'.$port.'/json-api/'.ltrim($function,'/');
-        $response=Http::timeout((int)AdminSetting::get('whm_timeout',20))
+        $response=Http::timeout((int)AdminSetting::get('whm_api_timeout',20))
             ->withHeaders(['Authorization'=>'whm '.$username.':'.$token])
             ->withOptions(['verify'=>$verify])
             ->get($url,$params);
