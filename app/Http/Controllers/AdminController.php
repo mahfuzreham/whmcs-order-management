@@ -32,15 +32,37 @@ class AdminController extends Controller
 
     public function deleteStaff(int $id){ Staff::findOrFail($id)->delete(); return back()->with('success','Staff account deleted.'); }
 
-    public function settings(){ return view('admin.settings',['settings'=>[
-        'refund_window_minutes'=>AdminSetting::get('refund_window_minutes',config('services.refund.window_minutes',5)),
-        'bkash_enabled'=>config('services.bkash.enabled',false),
-    ]]); }
+    public function settings()
+    {
+        return view('admin.settings',['settings'=>[
+            'refund_window_minutes'=>AdminSetting::get('refund_window_minutes',config('services.refund.window_minutes',5)),
+            'bkash_enabled'=>config('services.bkash.enabled',false),
+            'cart_enabled'=>AdminSetting::bool('cart_enabled',true),
+            'cart_show_descriptions'=>AdminSetting::bool('cart_show_descriptions',true),
+            'cart_allow_quantity'=>AdminSetting::bool('cart_allow_quantity',false),
+            'cart_currency'=>AdminSetting::get('cart_currency','BDT'),
+            'cart_checkout_notice'=>AdminSetting::get('cart_checkout_notice',''),
+            'cart_terms_url'=>AdminSetting::get('cart_terms_url',''),
+        ]]);
+    }
 
     public function saveSettings(Request $request)
     {
-        $d=$request->validate(['refund_window_minutes'=>'required|integer|min:1|max:60']);
+        $d=$request->validate([
+            'refund_window_minutes'=>'required|integer|min:1|max:60',
+            'cart_currency'=>'required|string|max:8',
+            'cart_checkout_notice'=>'nullable|string|max:1000',
+            'cart_terms_url'=>'nullable|url|max:500',
+        ]);
+
         AdminSetting::put('refund_window_minutes',$d['refund_window_minutes']);
-        return back()->with('success','Settings saved. Put permanent values in .env for production.');
+        AdminSetting::put('cart_enabled',$request->boolean('cart_enabled'));
+        AdminSetting::put('cart_show_descriptions',$request->boolean('cart_show_descriptions'));
+        AdminSetting::put('cart_allow_quantity',$request->boolean('cart_allow_quantity'));
+        AdminSetting::put('cart_currency',strtoupper($d['cart_currency']));
+        AdminSetting::put('cart_checkout_notice',$d['cart_checkout_notice'] ?? '');
+        AdminSetting::put('cart_terms_url',$d['cart_terms_url'] ?? '');
+
+        return back()->with('success','Billing and cart settings saved.');
     }
 }
