@@ -104,7 +104,7 @@ class CartController extends Controller
         return view('cart.checkout',[
             'products'=>$products,
             'client'=>session('whmcs_client',[]),
-            'paymentMethod'=>config('services.checkout.payment_method','bkash'),
+            'paymentMethod'=>AdminSetting::get('checkout_payment_method','bkash'),
             'currency'=>AdminSetting::get('cart_currency','BDT'),
             'notice'=>AdminSetting::get('cart_checkout_notice',''),
             'termsUrl'=>AdminSetting::get('cart_terms_url',''),
