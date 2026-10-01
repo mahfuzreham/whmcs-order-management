@@ -112,6 +112,61 @@ class WhmcsClient
         return null;
     }
 
+    public function service(int $clientId, int $serviceId): ?array
+    {
+        $data = $this->call('GetClientsProducts', ['clientid' => $clientId, 'serviceid' => $serviceId]);
+        $items = $data['products']['product'] ?? [];
+        return $items[0] ?? null;
+    }
+
+    public function invoice(int $clientId, int $invoiceId): ?array
+    {
+        $data = $this->call('GetInvoice', ['invoiceid' => $invoiceId]);
+        if (($data['result'] ?? null) !== 'success' || (int) ($data['userid'] ?? 0) !== $clientId) {
+            return null;
+        }
+        return $data;
+    }
+
+    public function transactions(int $clientId): array
+    {
+        $data = $this->call('GetTransactions', ['clientid' => $clientId]);
+        return $data['transactions']['transaction'] ?? [];
+    }
+
+    public function tickets(int $clientId): array
+    {
+        $data = $this->call('GetTickets', ['clientid' => $clientId, 'limitnum' => 50]);
+        return $data['tickets']['ticket'] ?? [];
+    }
+
+    public function ticket(int $clientId, int $ticketId): ?array
+    {
+        $data = $this->call('GetTicket', ['ticketid' => $ticketId, 'repliessort' => 'ASC']);
+        if (($data['result'] ?? null) !== 'success' || (int) ($data['userid'] ?? 0) !== $clientId) {
+            return null;
+        }
+        return $data;
+    }
+
+    public function openTicket(int $clientId, array $data): array
+    {
+        return $this->call('OpenTicket', array_merge([
+            'clientid' => $clientId,
+            'deptid' => (int) config('services.whmcs.support_dept_id'),
+            'priority' => 'Medium',
+        ], $data));
+    }
+
+    public function replyTicket(int $clientId, int $ticketId, string $message): array
+    {
+        return $this->call('AddTicketReply', [
+            'ticketid' => $ticketId,
+            'message' => $message,
+            'clientid' => $clientId,
+        ]);
+    }
+
     public function dashboardSummary(?int $clientId): array
     {
         if (!$clientId) {
