@@ -20,7 +20,7 @@ Route::get('/login/2fa', [AuthController::class, 'showTwoFactor'])->name('login.
 Route::post('/login/2fa', [AuthController::class, 'verifyTwoFactor'])->name('login.2fa.verify');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-Route::get('/payment/callback/{gateway}', [PaymentController::class, 'callback'])->name('payment.callback');
+Route::match(['get','post'], '/payment/callback/{gateway}', [PaymentController::class, 'callback'])->name('payment.callback');
 
 Route::middleware('admin.auth')->group(function () {
     Route::get('/admin', [AdminController::class, 'dashboard'])->name('admin.dashboard');
