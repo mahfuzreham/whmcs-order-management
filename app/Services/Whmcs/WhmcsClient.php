@@ -68,6 +68,33 @@ class WhmcsClient
         ];
     }
 
+    public function verifyTwoFactor(string $state, string $code): array
+    {
+        $response = Http::timeout((int) config('services.whmcs.timeout', 15))
+            ->acceptJson()
+            ->withHeaders(['X-Api-State' => $state])
+            ->post($this->url . '/api/v2/user/session/verify', [
+                'fields' => ['key' => $code],
+            ]);
+
+        if ($response->failed()) {
+            return ['authenticated' => false, 'message' => 'Two-factor verification failed.'];
+        }
+
+        $data = $response->json();
+
+        if (!is_array($data)) {
+            return ['authenticated' => false, 'message' => 'Invalid verification response.'];
+        }
+
+        return [
+            'authenticated' => !empty($data['apiState']) || !empty($data['api_state']) || (($data['result'] ?? null) === 'success'),
+            'api_state' => $data['apiState'] ?? $data['api_state'] ?? $state,
+            'session' => $data,
+            'message' => $data['message'] ?? null,
+        ];
+    }
+
     public function findClientByEmail(string $email): ?array
     {
         $data = $this->call('GetClients', ['search' => $email, 'limitnum' => 25]);
