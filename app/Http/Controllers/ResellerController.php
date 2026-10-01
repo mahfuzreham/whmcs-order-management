@@ -40,6 +40,15 @@ class ResellerController extends Controller
     public function accounts(): View { $this->guard(); return view('reseller.accounts',['accounts'=>$this->whm->configured()?$this->whm->listAccounts():[]]); }
     public function packages(): View { $this->guard(); return view('reseller.packages',['packages'=>$this->whm->configured()?$this->whm->listPackages():[]]); }
 
+    public function createPackage(Request $request){
+        $this->guard();
+        $d=$request->validate(['name'=>'required|string|max:100','quota'=>'required|integer|min:0','bwlimit'=>'required|integer|min:0','maxpop'=>'required|integer|min:-1','maxsql'=>'required|integer|min:-1']);
+        $this->whm->createPackage($d); return back()->with('success','Package creation request sent to WHM.');
+    }
+
+    public function deletePackage(string $pkg){$this->guard();$this->whm->deletePackage($pkg);return back()->with('success','Package deleted.');}
+    public function changePackage(Request $request,string $user){$this->guard();$d=$request->validate(['pkg'=>'required|string|max:100']);$this->whm->changePackage($user,$d['pkg']);return back()->with('success','Account package updated.');}
+
     public function createAccount(Request $request)
     {
         $this->guard();
