@@ -15,7 +15,7 @@ class AdminController extends Controller
 
     public function dashboard(){
         $updateInfo=null;
-        try { $updateInfo=app(UpdateService::class)->check(); } catch (\\Throwable $e) { $updateInfo=['error'=>$e->getMessage(),'current'=>config('version.version','1.0.0')]; }
+        try { $updateInfo=app(UpdateService::class)->check(); } catch (\Throwable $e) { $updateInfo=['error'=>$e->getMessage(),'current'=>config('version.version','1.0.0')]; }
         return view('admin.dashboard',['payments'=>PortalPayment::latest()->limit(10)->get(),'staffCount'=>Staff::count(),'updateInfo'=>$updateInfo]);
     }
 
