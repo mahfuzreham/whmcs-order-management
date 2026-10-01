@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Staff;\nuse App\Models\AdminSetting;
+use App\Models\Staff;
+use App\Models\AdminSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 
