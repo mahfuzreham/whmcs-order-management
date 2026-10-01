@@ -79,6 +79,7 @@
         <a class="{{ request()->routeIs('transactions') ? 'active' : '' }}" href="{{ route('transactions') }}">Transactions</a>
         <a class="{{ request()->routeIs('tickets','ticket') ? 'active' : '' }}" href="{{ route('tickets') }}">Support Tickets</a>
         <a class="{{ request()->routeIs('hosting','hosting.service') ? 'active' : '' }}" href="{{ route('hosting') }}">Web Hosting</a>
+        @if(\App\Models\AdminSetting::bool('reseller_enabled',false))<a class="{{ request()->routeIs('reseller*') ? 'active' : '' }}" href="{{ route('reseller') }}">Reseller Hosting</a>@endif
     </nav>
     <div class="menu-title" style="margin-top:18px">Shop</div>
     <nav class="menu">
