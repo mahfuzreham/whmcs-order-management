@@ -12,6 +12,7 @@ class WhmClient
     {
         $host=rtrim((string)AdminSetting::get('whm_host',''),'/');
         $token=(string)AdminSetting::get('whm_api_token','');
+        $username=(string)AdminSetting::get('whm_username','root');
         $port=(int)AdminSetting::get('whm_port',2087);
         $verify=AdminSetting::bool('whm_verify_ssl',true);
         if($host===''||$token==='') throw new RuntimeException('WHM API is not configured.');
@@ -19,7 +20,7 @@ class WhmClient
         $host=preg_replace('#^https?://#i','',$host);
         $url='https://'.$host.':'.$port.'/json-api/'.ltrim($function,'/');
         $response=Http::timeout((int)AdminSetting::get('whm_timeout',20))
-            ->withHeaders(['Authorization'=>'whm root:'.$token])
+            ->withHeaders(['Authorization'=>'whm '.$username.':'.$token])
             ->withOptions(['verify'=>$verify])
             ->get($url,$params);
         if($response->failed()) throw new RuntimeException('WHM API HTTP '.$response->status());
