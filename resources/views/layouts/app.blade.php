@@ -18,6 +18,7 @@
 <body>
 <nav class="nav">
     <a href="{{ route('dashboard') }}" style="color:#fff;text-decoration:none"><strong>Billing Portal</strong></a><div style="display:flex;gap:10px"><a href="{{ route('tickets') }}" style="color:#fff;text-decoration:none">Support</a><a href="{{ route('transactions') }}" style="color:#fff;text-decoration:none">Payments</a></div>
+    @if(session()->has('admin_staff'))<a href="{{ route('admin.dashboard') }}" style="color:#fff;text-decoration:none">Admin</a>@endif
     @if(session()->has('whmcs_client'))
         <form method="POST" action="{{ route('logout') }}">@csrf<button>Logout</button></form>
     @endif
