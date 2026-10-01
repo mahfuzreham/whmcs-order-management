@@ -1,0 +1,53 @@
+name: Build Release
+
+on:
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read application version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(php -r "echo require 'config/version.php';" | sed -n 's/.*version.*=>.*//p' || true)
+          VERSION=$(grep -oE "'version'\s*=>\s*'[^']+'" config/version.php | head -1 | sed -E "s/.*'version'\s*=>\s*'([^']+)'.*/\1/")
+          if [ -z "$VERSION" ]; then
+            echo "Unable to read config/version.php"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Version: $VERSION"
+
+      - name: Check existing release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if gh release view "v$VERSION" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create GitHub release
+        if: steps.release.outputs.exists != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          NOTES=""
+          if [ -f CHANGELOG.md ]; then
+            NOTES="$(cat CHANGELOG.md)"
+          fi
+          gh release create "v$VERSION" --title "v$VERSION" --notes "${NOTES:-Release v$VERSION}"
