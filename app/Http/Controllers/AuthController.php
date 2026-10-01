@@ -31,7 +31,7 @@ class AuthController extends Controller
                 'pending_2fa_state' => $auth['api_state'] ?? null,
             ]);
 
-            return back()->withErrors([
+            return redirect()->route('login.2fa');
                 'email' => 'Two-factor verification is required. 2FA UI is the next authentication milestone.',
             ]);
         }
@@ -52,6 +52,50 @@ class AuthController extends Controller
 
         $request->session()->regenerate();
 
+        session([
+            'whmcs_client' => $client,
+            'whmcs_api_state' => $auth['api_state'] ?? null,
+        ]);
+
+        return redirect()->route('dashboard');
+    }
+
+    public function showTwoFactor()
+    {
+        if (!session()->has('pending_2fa_email') || !session()->has('pending_2fa_state')) {
+            return redirect()->route('login');
+        }
+
+        return view('auth.two-factor');
+    }
+
+    public function verifyTwoFactor(Request $request, WhmcsClient $whmcs)
+    {
+        $data = $request->validate([
+            'code' => ['required', 'string', 'max:20'],
+        ]);
+
+        $state = session('pending_2fa_state');
+        $email = session('pending_2fa_email');
+
+        $auth = $whmcs->verifyTwoFactor($state, $data['code']);
+
+        if (!($auth['authenticated'] ?? false)) {
+            return back()->withErrors([
+                'code' => $auth['message'] ?? 'Invalid verification code.',
+            ]);
+        }
+
+        $client = $whmcs->findClientByEmail($email);
+
+        if (!$client) {
+            return back()->withErrors([
+                'code' => 'Authentication succeeded, but the customer profile could not be loaded.',
+            ]);
+        }
+
+        $request->session()->regenerate();
+        session()->forget(['pending_2fa_email', 'pending_2fa_state']);
         session([
             'whmcs_client' => $client,
             'whmcs_api_state' => $auth['api_state'] ?? null,
