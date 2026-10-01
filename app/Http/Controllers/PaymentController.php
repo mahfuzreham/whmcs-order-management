@@ -103,7 +103,7 @@ class PaymentController extends Controller
         if ($payment->status !== 'paid' || !$payment->completed_at) {
             return back()->withErrors(['refund'=>'This payment is not refundable.']);
         }
-        if ($payment->completed_at->lt(now()->subMinutes(5))) {
+        if ($payment->completed_at->lt(now()->subMinutes((int) config('services.refund.window_minutes', 5)))) {
             return back()->withErrors(['refund'=>'The 5-minute instant refund window has expired.']);
         }
         if ($payment->refund_status === 'completed') {
