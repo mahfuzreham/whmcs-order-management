@@ -23,16 +23,38 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        // Authentication endpoint will be finalized against the target WHMCS version.
+        $auth = $whmcs->authenticateCustomer($data['email'], $data['password']);
+
+        if (($auth['requires_2fa'] ?? false) === true) {
+            session([
+                'pending_2fa_email' => $data['email'],
+                'pending_2fa_state' => $auth['api_state'] ?? null,
+            ]);
+
+            return back()->withErrors([
+                'email' => 'Two-factor verification is required. 2FA UI is the next authentication milestone.',
+            ]);
+        }
+
+        if (!($auth['authenticated'] ?? false)) {
+            return back()->withErrors([
+                'email' => $auth['message'] ?? 'Unable to authenticate with WHMCS.',
+            ])->onlyInput('email');
+        }
+
         $client = $whmcs->findClientByEmail($data['email']);
 
         if (!$client) {
-            return back()->withErrors(['email' => 'Customer account was not found.']);
+            return back()->withErrors([
+                'email' => 'WHMCS authenticated the account, but the customer profile could not be loaded.',
+            ])->onlyInput('email');
         }
+
+        $request->session()->regenerate();
 
         session([
             'whmcs_client' => $client,
-            'portal_email' => $data['email'],
+            'whmcs_api_state' => $auth['api_state'] ?? null,
         ]);
 
         return redirect()->route('dashboard');
