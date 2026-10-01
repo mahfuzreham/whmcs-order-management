@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PortalController;
 use Illuminate\Support\Facades\Route;
 
@@ -13,6 +14,8 @@ Route::get('/login/2fa', [AuthController::class, 'showTwoFactor'])->name('login.
 Route::post('/login/2fa', [AuthController::class, 'verifyTwoFactor'])->name('login.2fa.verify');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
+Route::get('/payment/callback/{gateway}', [PaymentController::class, 'callback'])->name('payment.callback');
+
 Route::middleware('portal.auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/services', [PortalController::class, 'services'])->name('services');
@@ -20,6 +23,8 @@ Route::middleware('portal.auth')->group(function () {
     Route::get('/domains', [PortalController::class, 'domains'])->name('domains');
     Route::get('/invoices', [PortalController::class, 'invoices'])->name('invoices');
     Route::get('/invoices/{id}', [PortalController::class, 'invoice'])->name('invoice');
+    Route::get('/pay/invoice/{id}', [PaymentController::class, 'show'])->name('payment.show');
+    Route::post('/pay/invoice/{id}', [PaymentController::class, 'start'])->name('payment.start');
     Route::get('/transactions', [PortalController::class, 'transactions'])->name('transactions');
     Route::get('/tickets', [PortalController::class, 'tickets'])->name('tickets');
     Route::post('/tickets', [PortalController::class, 'createTicket'])->name('tickets.create');
