@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AdminSetting;
 use App\Models\PortalPayment;
 use App\Services\Payments\BkashGateway;
 use App\Services\Whmcs\WhmcsClient;
@@ -32,9 +33,10 @@ class PaymentController extends Controller
         if (!AdminSetting::bool('bkash_enabled', false)) return back()->withErrors(['payment'=>'bKash payments are currently disabled.']);
 
         $amount=(float)($invoice['balance'] ?? $invoice['total'] ?? 0);
-        if(strtolower($invoice['status'] ?? '')==='paid' || $amount<=0){
-            return redirect()->route('invoice',$id)->withErrors(['payment'=>'Invoice is already paid.']);
-        }
+        if(strtolower($invoice['status'] ?? '')==='paid' || $amount<=0) return redirect()->route('invoice',$id)->withErrors(['payment'=>'Invoice is already paid.']);
+
+        $existing=PortalPayment::where('client_id',$clientId)->where('invoice_id',$id)->where('gateway','bkash')->where('status','pending')->latest()->first();
+        if($existing && $existing->payment_id) return back()->with('info','A payment session is already in progress. Please complete it before starting another payment.');
 
         $orderId=$this->findOrderIdForInvoice($clientId,$id);
         $reference='INV-'.$id.'-'.Str::upper(Str::random(10));
@@ -45,6 +47,7 @@ class PaymentController extends Controller
 
         try{
             $result=$this->bkash->create($reference,(string)$amount);
+            if(empty($result['paymentID']) || empty($result['bkashURL'])) throw new \RuntimeException('Invalid payment gateway response.');
             $payment->update(['payment_id'=>$result['paymentID'],'payload'=>$result]);
             return redirect()->away($result['bkashURL']);
         }catch(Throwable $e){
@@ -91,21 +94,14 @@ class PaymentController extends Controller
                     'autosetup'=>AdminSetting::bool('auto_setup_order', true),
                     'sendemail'=>AdminSetting::bool('order_email', true),
                 ]);
-                // Payment is already confirmed. A provisioning/acceptance error must not turn a successful payment into a failed payment.
-                if(($acceptResult['result'] ?? '')!=='success'){
-                    $result['_accept_order_error']=$acceptResult['message'] ?? 'Order acceptance failed.';
-                }
+                if(($acceptResult['result'] ?? '')!=='success') $result['_accept_order_error']=$acceptResult['message'] ?? 'Order acceptance failed.';
             }
 
-            $payment->update([
-                'status'=>'paid','transaction_id'=>$trxId,'completed_at'=>now(),
-                'payload'=>$result,
-            ]);
-
+            $payment->update(['status'=>'paid','transaction_id'=>$trxId,'completed_at'=>now(),'payload'=>$result]);
             return redirect()->route('invoice',$payment->invoice_id)->with('success','Payment completed successfully. Your order has been sent for service activation.');
         }catch(Throwable $e){
-            $payment->update(['status'=>'failed','payload'=>['error'=>$e->getMessage()]]);
-            return redirect()->route('invoice',$payment->invoice_id)->withErrors(['payment'=>'Payment could not be verified.']);
+            $payment->update(['status'=>'verification_error','payload'=>['error'=>$e->getMessage()]]);
+            return redirect()->route('login')->withErrors(['payment'=>'Payment was received but could not be fully reconciled automatically. Please contact support.']);
         }
     }
 
@@ -113,10 +109,9 @@ class PaymentController extends Controller
     {
         $client=session('whmcs_client',[]);
         $payment=PortalPayment::where('id',$id)->where('client_id',(int)($client['id'] ?? 0))->firstOrFail();
-
         if(!AdminSetting::bool('refund_enabled', true)) return back()->withErrors(['refund'=>'Instant refund is currently disabled.']);
         if($payment->status!=='paid' || !$payment->completed_at) return back()->withErrors(['refund'=>'This payment is not refundable.']);
-        if($payment->completed_at->lt(now()->subMinutes((int)\App\Models\AdminSetting::get('refund_window_minutes',5)))) return back()->withErrors(['refund'=>'The instant refund window has expired.']);
+        if($payment->completed_at->lt(now()->subMinutes((int)AdminSetting::get('refund_window_minutes',5)))) return back()->withErrors(['refund'=>'The instant refund window has expired.']);
         if($payment->refund_status==='completed') return back()->withErrors(['refund'=>'This payment has already been refunded.']);
 
         $invoice=$this->whmcs->invoice($payment->client_id,$payment->invoice_id);
@@ -126,11 +121,7 @@ class PaymentController extends Controller
         try{
             $result=$this->bkash->refund((string)$payment->payment_id,(string)$payment->transaction_id,(string)$payment->amount,'WHMCS-'.$payment->invoice_id,'Service was not activated');
             $ok=(($result['statusCode'] ?? '')==='0000') || (($result['refundStatus'] ?? '')==='Completed');
-            $payment->update([
-                'refund_status'=>$ok?'completed':'failed','refund_amount'=>$payment->amount,
-                'refund_id'=>$result['refundTrxID'] ?? $result['trxID'] ?? null,
-                'refund_payload'=>$result,'refunded_at'=>$ok?now():null,
-            ]);
+            $payment->update(['refund_status'=>$ok?'completed':'failed','refund_amount'=>$payment->amount,'refund_id'=>$result['refundTrxID'] ?? $result['trxID'] ?? null,'refund_payload'=>$result,'refunded_at'=>$ok?now():null]);
             return back()->with($ok?'success':'error',$ok?'Refund processed successfully.':'Refund request was not completed.');
         }catch(Throwable $e){
             $payment->update(['refund_status'=>'failed','refund_payload'=>['error'=>$e->getMessage()]]);
@@ -141,9 +132,7 @@ class PaymentController extends Controller
     protected function findOrderIdForInvoice(int $clientId,int $invoiceId): ?int
     {
         $data=$this->whmcs->call('GetOrders',['userid'=>$clientId,'limitnum'=>100]);
-        foreach(($data['orders']['order'] ?? []) as $order){
-            if((int)($order['invoiceid'] ?? 0)===$invoiceId) return (int)$order['id'];
-        }
+        foreach(($data['orders']['order'] ?? []) as $order) if((int)($order['invoiceid'] ?? 0)===$invoiceId) return (int)$order['id'];
         return null;
     }
 
