@@ -29,9 +29,7 @@ class InstallController extends Controller
         ]);
 
         $envPath = base_path('.env');
-        if (File::exists($envPath)) {
-            return back()->withErrors(['install' => 'A .env file already exists. Remove it only if this is a fresh installation.']);
-        }
+        if (File::exists($envPath)) return back()->withErrors(['install' => 'A .env file already exists. Remove it only if this is a fresh installation.']);
 
         $key = 'base64:'.base64_encode(random_bytes(32));
         $env = 'APP_NAME="'.str_replace('"','',$data['app_name']).'"'.PHP_EOL.
@@ -51,16 +49,7 @@ class InstallController extends Controller
             'CACHE_STORE=file'.PHP_EOL.
             'QUEUE_CONNECTION=database'.PHP_EOL;
 
-        if (!File::put($envPath, $env)) {
-            return back()->withErrors(['install' => 'Unable to write .env. Check cPanel file permissions.']);
-        }
-
-        return redirect()->route('install.run');
-    }
-
-    public function run()
-    {
-        if ($this->installed()) abort(404);
+        if (!File::put($envPath, $env)) return back()->withErrors(['install' => 'Unable to write .env. Check cPanel file permissions.']);
 
         try {
             Artisan::call('migrate', ['--force' => true]);
@@ -68,8 +57,15 @@ class InstallController extends Controller
             File::put(storage_path('app/installed'), now()->toIso8601String());
             return redirect()->route('install.done');
         } catch (\Throwable $e) {
-            return view('install', ['error' => 'Database setup failed: '.$e->getMessage(), 'envCreated' => true]);
+            File::delete($envPath);
+            return view('install', ['error' => 'Database setup failed. Check the database credentials and server logs.', 'envCreated' => false]);
         }
+    }
+
+    public function run()
+    {
+        // Installation is intentionally POST-only through configure().
+        abort(404);
     }
 
     public function done()
