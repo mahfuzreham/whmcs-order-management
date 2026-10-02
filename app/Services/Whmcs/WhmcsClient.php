@@ -14,7 +14,7 @@ class WhmcsClient
     public function __construct()
     {
         $this->url = rtrim((string) AdminSetting::get('whmcs_url', ''), '/');
-        $this->timeout = (int) AdminSetting::get('whmcs_timeout', 15);
+        $this->timeout = max(5, min(120, (int) AdminSetting::get('whmcs_timeout', 15)));
     }
 
     public function call(string $action, array $params = []): array
@@ -23,14 +23,21 @@ class WhmcsClient
             throw new RuntimeException('WHMCS API is not configured. Please configure it from Admin Settings.');
         }
 
+        $identifier = trim((string) AdminSetting::get('whmcs_identifier', ''));
+        $secret = (string) AdminSetting::get('whmcs_secret', '');
+        if ($identifier === '' || $secret === '') {
+            throw new RuntimeException('WHMCS API credentials are not configured.');
+        }
+
         $payload = array_merge([
             'action' => $action,
-            'identifier' => AdminSetting::get('whmcs_identifier', ''),
-            'secret' => AdminSetting::get('whmcs_secret', ''),
+            'identifier' => $identifier,
+            'secret' => $secret,
             'responsetype' => 'json',
         ], $params);
 
         $response = Http::timeout($this->timeout)
+            ->connectTimeout(min(10, $this->timeout))
             ->asForm()
             ->post($this->url . '/includes/api.php', $payload);
 
@@ -38,7 +45,12 @@ class WhmcsClient
             throw new RuntimeException('WHMCS API request failed with HTTP '.$response->status());
         }
 
-        return $response->json() ?: ['result' => 'error', 'message' => 'Invalid WHMCS response'];
+        $data = $response->json();
+        if (!is_array($data)) {
+            throw new RuntimeException('Invalid WHMCS API response.');
+        }
+
+        return $data;
     }
 
     public function authenticateCustomer(string $email, string $password): array
@@ -48,6 +60,7 @@ class WhmcsClient
         }
 
         $response = Http::timeout($this->timeout)
+            ->connectTimeout(min(10, $this->timeout))
             ->acceptJson()
             ->post($this->url . '/api/v2/user/session', [
                 'email' => $email,
@@ -59,30 +72,48 @@ class WhmcsClient
         }
 
         $data = $response->json();
-
         if (!is_array($data)) {
             return ['authenticated' => false, 'message' => 'Invalid authentication response.'];
         }
 
         if (($data['requiresVerification'] ?? false) || ($data['requires_2fa'] ?? false)) {
+            $state = $data['apiState'] ?? $data['api_state'] ?? null;
+            if (!$state) {
+                return ['authenticated' => false, 'message' => 'Two-factor authentication state is missing.'];
+            }
+
             return [
                 'authenticated' => false,
                 'requires_2fa' => true,
-                'api_state' => $data['apiState'] ?? $data['api_state'] ?? null,
+                'api_state' => $state,
                 'message' => 'Two-factor authentication is required.',
+            ];
+        }
+
+        $state = $data['apiState'] ?? $data['api_state'] ?? null;
+        $success = (($data['result'] ?? null) === 'success') || !empty($state);
+        if (!$success) {
+            return [
+                'authenticated' => false,
+                'message' => $data['message'] ?? 'Invalid email or password.',
             ];
         }
 
         return [
             'authenticated' => true,
-            'api_state' => $data['apiState'] ?? $data['api_state'] ?? null,
+            'api_state' => $state,
             'session' => $data,
         ];
     }
 
     public function verifyTwoFactor(string $state, string $code): array
     {
+        if ($state === '' || $code === '') {
+            return ['authenticated' => false, 'message' => 'Invalid verification request.'];
+        }
+
         $response = Http::timeout($this->timeout)
+            ->connectTimeout(min(10, $this->timeout))
             ->acceptJson()
             ->withHeaders(['X-Api-State' => $state])
             ->post($this->url . '/api/v2/user/session/verify', [
@@ -94,14 +125,16 @@ class WhmcsClient
         }
 
         $data = $response->json();
-
         if (!is_array($data)) {
             return ['authenticated' => false, 'message' => 'Invalid verification response.'];
         }
 
+        $apiState = $data['apiState'] ?? $data['api_state'] ?? null;
+        $authenticated = (($data['result'] ?? null) === 'success') || !empty($apiState);
+
         return [
-            'authenticated' => !empty($data['apiState']) || !empty($data['api_state']) || (($data['result'] ?? null) === 'success'),
-            'api_state' => $data['apiState'] ?? $data['api_state'] ?? $state,
+            'authenticated' => $authenticated,
+            'api_state' => $apiState ?? $state,
             'session' => $data,
             'message' => $data['message'] ?? null,
         ];
