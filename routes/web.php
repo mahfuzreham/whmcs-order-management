@@ -17,16 +17,13 @@ use App\Http\Controllers\UpdateController;
 Route::get('/install', [InstallController::class, 'index'])->name('install');
 Route::post('/install', [InstallController::class, 'configure'])->name('install.configure');
 Route::get('/install/done', [InstallController::class, 'done'])->name('install.done');
-
 Route::get('/', fn () => redirect()->route('dashboard'));
 Route::get('/cart', [CartController::class, 'index'])->name('cart');
 Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
 Route::post('/cart/remove/{key}', [CartController::class, 'remove'])->name('cart.remove');
-
 Route::get('/admin/login', [AdminAuthController::class, 'showLogin'])->name('admin.login');
 Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login.submit');
 Route::post('/admin/logout', [AdminAuthController::class, 'logout'])->name('admin.logout');
-
 Route::get('/dashboard', [UnifiedDashboardController::class, 'show'])->name('dashboard');
 Route::post('/dashboard', [UnifiedDashboardController::class, 'login'])->name('dashboard.login');
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -34,8 +31,6 @@ Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 Route::get('/login/2fa', [AuthController::class, 'showTwoFactor'])->name('login.2fa');
 Route::post('/login/2fa', [AuthController::class, 'verifyTwoFactor'])->name('login.2fa.verify');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-
-// bKash returns the browser to this endpoint with paymentID; execution is verified server-side.
 Route::get('/payment/callback/{gateway}', [PaymentController::class, 'callback'])->name('payment.callback');
 
 Route::middleware('admin.auth')->group(function () {
@@ -44,7 +39,7 @@ Route::middleware('admin.auth')->group(function () {
     Route::get('/admin/staff', [AdminController::class, 'staff'])->middleware('admin.permission:staff.view')->name('admin.staff');
     Route::post('/admin/staff', [AdminController::class, 'createStaff'])->middleware('admin.permission:staff.manage')->name('admin.staff.create');
     Route::post('/admin/staff/{id}/toggle', [AdminController::class, 'toggleStaff'])->middleware('admin.permission:staff.manage')->name('admin.staff.toggle');
-    Route::delete('/admin/staff/{id}', [AdminController::class, 'deleteStaff'])->middleware('admin.permission:staff.delete')->name('admin.staff.delete');
+    Route::delete('/admin/staff/{id}', [AdminController::class, 'deleteStaff'])->middleware('admin.permission:staff.manage')->name('admin.staff.delete');
     Route::get('/admin/settings', [AdminController::class, 'settings'])->middleware('admin.permission:settings.manage')->name('admin.settings');
     Route::post('/admin/settings', [AdminController::class, 'saveSettings'])->middleware('admin.permission:settings.manage')->name('admin.settings.save');
     Route::get('/admin/updates', [UpdateController::class, 'index'])->middleware('admin.permission:settings.manage')->name('admin.updates');
@@ -58,7 +53,6 @@ Route::middleware('portal.auth')->group(function () {
     Route::get('/dashboard/hosting', [HostingController::class, 'index'])->name('hosting');
     Route::get('/dashboard/hosting/{id}', [HostingController::class, 'service'])->name('hosting.service');
     Route::get('/dashboard/hosting/{id}/cpanel', [HostingController::class, 'cpanel'])->name('hosting.cpanel');
-
     Route::prefix('dashboard/reseller')->group(function () {
         Route::get('/', [ResellerController::class, 'index'])->name('reseller');
         Route::get('/accounts', [ResellerController::class, 'accounts'])->name('reseller.accounts');
@@ -71,7 +65,6 @@ Route::middleware('portal.auth')->group(function () {
         Route::post('/packages', [ResellerController::class, 'createPackage'])->name('reseller.packages.create');
         Route::post('/packages/{pkg}/delete', [ResellerController::class, 'deletePackage'])->name('reseller.packages.delete');
     });
-
     Route::get('/cart/checkout', [CartController::class, 'checkout'])->name('cart.checkout');
     Route::post('/cart/checkout', [CartController::class, 'placeOrder'])->name('cart.checkout.place');
     Route::prefix('dashboard')->group(function () {
